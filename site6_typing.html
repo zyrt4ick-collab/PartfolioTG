@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>скорость печати — ZYRT4ICK</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0b0b0b;color:#ccc;font-family:'JetBrains Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:4rem 1.5rem;position:relative}
+  .watermark{position:fixed;bottom:1.2rem;right:1.5rem;font-size:.6rem;color:#1c1c1c;letter-spacing:.25em;pointer-events:none}
+  h1{font-size:.75rem;letter-spacing:.4em;color:#444;margin-bottom:.5rem;text-transform:lowercase}
+  .subtitle{font-size:.6rem;color:#2a2a2a;letter-spacing:.2em;margin-bottom:3rem}
+  .stats-row{display:flex;gap:3rem;margin-bottom:3rem}
+  .stat{text-align:center}
+  .stat-val{font-size:2rem;font-weight:700;color:#00e5ff;line-height:1}
+  .stat-label{font-size:.55rem;color:#333;letter-spacing:.2em;margin-top:.3rem}
+  .text-display{max-width:680px;width:100%;font-size:.95rem;line-height:2;letter-spacing:.03em;background:#0f0f0f;border:1px solid #181818;padding:2rem;margin-bottom:1.5rem;min-height:100px}
+  .char{color:#333}
+  .char.correct{color:#aaa}
+  .char.wrong{color:#ff4040;background:#ff404015}
+  .char.cursor{border-left:2px solid #00e5ff}
+  .input-area{max-width:680px;width:100%;position:relative}
+  input{width:100%;background:#0f0f0f;border:1px solid #1e1e1e;border-top:none;color:#ccc;font-family:'JetBrains Mono',monospace;font-size:.85rem;padding:.9rem 1rem;outline:none;caret-color:#00e5ff;transition:border-color .2s}
+  input:focus{border-color:#00e5ff}
+  .controls{display:flex;gap:1rem;margin-top:1.5rem}
+  .btn{background:none;border:1px solid #222;color:#444;font-family:'JetBrains Mono',monospace;font-size:.65rem;padding:.5rem 1.5rem;cursor:pointer;letter-spacing:.15em;transition:all .2s}
+  .btn:hover{border-color:#00e5ff;color:#00e5ff}
+  .result-banner{display:none;max-width:680px;width:100%;background:#0f0f0f;border:1px solid #00e5ff20;padding:2rem;text-align:center;margin-top:1.5rem}
+  .result-banner.show{display:block}
+  .result-wpm{font-size:3rem;font-weight:700;color:#00e5ff}
+  .result-label{font-size:.65rem;color:#444;letter-spacing:.2em;margin-bottom.5rem}
+  .result-detail{font-size:.7rem;color:#333;margin-top:.8rem}
+  footer{margin-top:4rem;font-size:.6rem;color:#222}
+  footer a{color:#222;text-decoration:none}
+  footer a:hover{color:#00e5ff}
+  .timer-bar{max-width:680px;width:100%;height:2px;background:#111;margin-bottom:1.5rem;overflow:hidden}
+  .timer-fill{height:100%;background:#00e5ff;width:100%;transition:width 1s linear}
+</style>
+</head>
+<body>
+<h1>// тест скорости печати</h1>
+<div class="subtitle">by zyrt4ick</div>
+
+<div class="stats-row">
+  <div class="stat"><div class="stat-val" id="wpmEl">0</div><div class="stat-label">зн/мин</div></div>
+  <div class="stat"><div class="stat-val" id="accEl">—</div><div class="stat-label">точность</div></div>
+  <div class="stat"><div class="stat-val" id="timeEl">60</div><div class="stat-label">секунд</div></div>
+</div>
+
+<div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+
+<div class="text-display" id="textDisplay"></div>
+<div class="input-area">
+  <input type="text" id="inputEl" placeholder="начни печатать..." autocomplete="off" spellcheck="false" autocorrect="off">
+</div>
+<div class="controls">
+  <button class="btn" onclick="restart()">↺ заново</button>
+  <button class="btn" onclick="newText()">новый текст</button>
+</div>
+
+<div class="result-banner" id="resultBanner">
+  <div class="result-label">результат</div>
+  <div class="result-wpm" id="resultWpm">0</div>
+  <div style="font-size:.6rem;color:#444;letter-spacing:.2em">слов в минуту</div>
+  <div class="result-detail" id="resultDetail"></div>
+</div>
+
+<footer><a href="https://spontaneous-pithivier-620100.netlify.app/" target="_blank">← главная</a></footer>
+<div class="watermark">ZYRT4ICK</div>
+
+<script>
+const texts = [
+  "программирование это как писать стихи только для компьютера который вообще не понимает красоту",
+  "интернет изобрели чтобы люди могли спорить с незнакомцами в любое время суток",
+  "каждый раз когда закрываешь вкладки чувствуешь себя немного свободнее",
+  "коты знают всё но не скажут потому что им всё равно",
+  "ночью код пишется лучше потому что мозг устал сопротивляться",
+];
+let text='', pos=0, errors=0, timer=null, timeLeft=60, started=false, finished=false;
+function renderText(){
+  const chars = text.split('').map((c,i)=>{
+    let cls='char';
+    if(i<pos) cls+=' correct';
+    if(i===pos) cls+=' cursor';
+    return `<span class="${cls}">${c==' '?'&nbsp;':c}</span>`;
+  }).join('');
+  document.getElementById('textDisplay').innerHTML=chars;
+}
+function newText(){
+  text=texts[Math.floor(Math.random()*texts.length)];
+  restart();
+}
+function restart(){
+  clearInterval(timer);
+  pos=0;errors=0;timeLeft=60;started=false;finished=false;
+  document.getElementById('wpmEl').textContent='0';
+  document.getElementById('accEl').textContent='—';
+  document.getElementById('timeEl').textContent='60';
+  document.getElementById('timerFill').style.width='100%';
+  document.getElementById('resultBanner').classList.remove('show');
+  document.getElementById('inputEl').value='';
+  document.getElementById('inputEl').disabled=false;
+  document.getElementById('inputEl').focus();
+  renderText();
+}
+function startTimer(){
+  timer=setInterval(()=>{
+    timeLeft--;
+    document.getElementById('timeEl').textContent=timeLeft;
+    document.getElementById('timerFill').style.width=(timeLeft/60*100)+'%';
+    const words=text.slice(0,pos).split(' ').length;
+    const elapsed=(60-timeLeft)||1;
+    document.getElementById('wpmEl').textContent=Math.round(words/(elapsed/60));
+    if(timeLeft<=0) finish();
+  },1000);
+}
+function finish(){
+  clearInterval(timer);finished=true;
+  document.getElementById('inputEl').disabled=true;
+  const words=text.slice(0,pos).split(' ').length;
+  const wpm=Math.round(words);
+  const acc=pos>0?Math.round(((pos-errors)/pos)*100):0;
+  document.getElementById('resultWpm').textContent=wpm;
+  document.getElementById('resultDetail').textContent=`точность: ${acc}% · ошибок: ${errors}`;
+  document.getElementById('resultBanner').classList.add('show');
+}
+document.getElementById('inputEl').addEventListener('input',e=>{
+  if(finished)return;
+  if(!started){started=true;startTimer();}
+  const val=e.target.value;
+  if(val.length>pos){
+    const c=val[val.length-1];
+    if(c===text[pos]){pos++;}
+    else{errors++;pos++;}
+    if(pos>=text.length) finish();
+  } else if(val.length<pos){pos=Math.max(0,val.length);}
+  const acc=pos>0?Math.round(((pos-errors)/pos)*100):100;
+  document.getElementById('accEl').textContent=acc+'%';
+  renderText();
+});
+newText();
+</script>
+</body>
+</html>

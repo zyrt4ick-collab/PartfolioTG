@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>дневник снов — ZYRT4ICK</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#060510;color:#c8c0d8;font-family:'Space Mono',monospace;min-height:100vh;padding:3rem 1.5rem;position:relative}
+  .watermark{position:fixed;bottom:1.2rem;right:1.5rem;font-size:.6rem;color:#1a1520;letter-spacing:.25em;pointer-events:none}
+  .stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+  .wrap{max-width:600px;margin:0 auto;position:relative;z-index:1}
+  header{text-align:center;margin-bottom:3rem;padding-bottom:2rem;border-bottom:1px solid #1a1530}
+  header h1{font-family:'IM Fell English',serif;font-size:2rem;color:#9b7fe8;letter-spacing:.05em;margin-bottom:.4rem}
+  header p{font-size:.6rem;letter-spacing:.25em;color:#3a3050}
+  .new-entry{background:#0a0815;border:1px solid #1e1a30;padding:2rem;margin-bottom:2.5rem}
+  .new-entry label{font-size:.55rem;letter-spacing:.25em;color:#4a4060;display:block;margin-bottom:.4rem}
+  .new-entry input,.new-entry textarea{width:100%;background:#060510;border:1px solid #1a1530;color:#c8c0d8;font-family:'Space Mono',monospace;font-size:.78rem;padding:.7rem;outline:none;margin-bottom:1rem;transition:border-color .2s}
+  .new-entry input{font-family:'IM Fell English',serif;font-size:1rem}
+  .new-entry textarea{resize:none;height:120px;line-height:1.7}
+  .new-entry input:focus,.new-entry textarea:focus{border-color:#9b7fe8}
+  .tags-row{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+  .tag{font-size:.55rem;letter-spacing:.12em;border:1px solid #1a1530;color:#4a4060;padding:.25rem .6rem;cursor:pointer;transition:all .2s}
+  .tag.sel{border-color:#9b7fe8;color:#9b7fe8;background:#9b7fe810}
+  .save-btn{background:none;border:1px solid #9b7fe8;color:#9b7fe8;font-family:'Space Mono',monospace;font-size:.65rem;padding:.6rem 2rem;cursor:pointer;letter-spacing:.2em;transition:all .2s;width:100%}
+  .save-btn:hover{background:#9b7fe8;color:#000}
+  .journal{display:flex;flex-direction:column;gap:1.5rem}
+  .entry{padding:1.5rem;background:#080613;border:1px solid #120f20;position:relative;transition:border-color .3s}
+  .entry:hover{border-color:#2a2045}
+  .entry-date{font-size:.55rem;letter-spacing:.2em;color:#3a3050;margin-bottom:.7rem}
+  .entry-title{font-family:'IM Fell English',serif;font-size:1.1rem;color:#c8c0d8;margin-bottom:.8rem}
+  .entry-text{font-size:.75rem;line-height:1.9;color:#7a7090;font-style:italic}
+  .entry-tags{display:flex;gap:.4rem;margin-top:1rem;flex-wrap:wrap}
+  .entry-tag{font-size:.5rem;letter-spacing:.12em;border:1px solid #1a1530;color:#3a3050;padding:.15rem .5rem}
+  .del-entry{position:absolute;top:.8rem;right:.8rem;background:none;border:none;color:#1e1a30;cursor:pointer;font-size:.7rem;transition:color .2s}
+  .del-entry:hover{color:#9b7fe8}
+  .empty{text-align:center;padding:3rem;font-family:'IM Fell English',serif;font-size:1rem;color:#1e1a30;font-style:italic}
+  .mood-row{display:flex;gap:.5rem;margin-bottom:1rem}
+  .mood-opt{font-size:.9rem;cursor:pointer;padding:.2rem;border:1px solid transparent;transition:all .2s;border-radius:2px}
+  .mood-opt.sel{border-color:#9b7fe840;background:#9b7fe810}
+  footer{margin-top:3rem;font-size:.6rem;color:#2a2040}
+  footer a{color:#2a2040;text-decoration:none}
+  footer a:hover{color:#9b7fe8}
+</style>
+</head>
+<body>
+<canvas class="stars" id="stars"></canvas>
+<div class="wrap">
+  <header>
+    <h1>дневник снов</h1>
+    <p>// by zyrt4ick · запомни пока не забыл</p>
+  </header>
+
+  <div class="new-entry">
+    <label>// название сна</label>
+    <input type="text" id="titleIn" placeholder="падение в бездну..." maxlength="60">
+    <label>// настроение</label>
+    <div class="mood-row">
+      <span class="mood-opt" data-m="😨" onclick="setMood(this)">😨</span>
+      <span class="mood-opt" data-m="😔" onclick="setMood(this)">😔</span>
+      <span class="mood-opt" data-m="😶" onclick="setMood(this)">😶</span>
+      <span class="mood-opt sel" data-m="😌" onclick="setMood(this)">😌</span>
+      <span class="mood-opt" data-m="✨" onclick="setMood(this)">✨</span>
+    </div>
+    <label>// теги</label>
+    <div class="tags-row">
+      <span class="tag" onclick="toggleTag(this)">кошмар</span>
+      <span class="tag" onclick="toggleTag(this)">полёт</span>
+      <span class="tag" onclick="toggleTag(this)">незнакомцы</span>
+      <span class="tag" onclick="toggleTag(this)">повтор</span>
+      <span class="tag" onclick="toggleTag(this)">осознанный</span>
+      <span class="tag" onclick="toggleTag(this)">реалистичный</span>
+      <span class="tag" onclick="toggleTag(this)">странное</span>
+    </div>
+    <label>// описание</label>
+    <textarea id="textIn" placeholder="я шёл по коридору который никогда не кончался..."></textarea>
+    <button class="save-btn" onclick="saveEntry()">сохранить сон</button>
+  </div>
+
+  <div class="journal" id="journal">
+    <div class="empty">снов пока нет. или ты не помнишь.</div>
+  </div>
+
+  <footer><a href="https://spontaneous-pithivier-620100.netlify.app/" target="_blank">← главная</a></footer>
+</div>
+<div class="watermark">ZYRT4ICK</div>
+
+<script>
+// stars
+const cv=document.getElementById('stars'),ctx=cv.getContext('2d');
+cv.width=window.innerWidth;cv.height=window.innerHeight;
+for(let i=0;i<200;i++){
+  ctx.beginPath();
+  ctx.arc(Math.random()*cv.width,Math.random()*cv.height,Math.random()*1.2,0,Math.PI*2);
+  ctx.fillStyle=`rgba(180,160,220,${Math.random()*.4+.05})`;
+  ctx.fill();
+}
+
+let entries=JSON.parse(localStorage.getItem('zyrt_dreams')||'[]');
+let selMood='😌';
+let selTags=[];
+
+function setMood(el){document.querySelectorAll('.mood-opt').forEach(m=>m.classList.remove('sel'));el.classList.add('sel');selMood=el.dataset.m;}
+function toggleTag(el){el.classList.toggle('sel');const t=el.textContent;selTags=selTags.includes(t)?selTags.filter(x=>x!==t):[...selTags,t];}
+function saveEntry(){
+  const title=document.getElementById('titleIn').value.trim();
+  const text=document.getElementById('textIn').value.trim();
+  if(!title||!text)return alert('заполни название и описание');
+  entries.unshift({id:Date.now(),title,text,mood:selMood,tags:[...selTags],date:new Date().toLocaleString('ru')});
+  localStorage.setItem('zyrt_dreams',JSON.stringify(entries));
+  document.getElementById('titleIn').value='';
+  document.getElementById('textIn').value='';
+  document.querySelectorAll('.tag').forEach(t=>t.classList.remove('sel'));
+  selTags=[];
+  render();
+}
+function delEntry(id){entries=entries.filter(e=>e.id!==id);localStorage.setItem('zyrt_dreams',JSON.stringify(entries));render();}
+function render(){
+  const j=document.getElementById('journal');
+  if(!entries.length){j.innerHTML='<div class="empty">снов пока нет. или ты не помнишь.</div>';return;}
+  j.innerHTML=entries.map(e=>`
+    <div class="entry">
+      <button class="del-entry" onclick="delEntry(${e.id})">✕</button>
+      <div class="entry-date">${e.mood} · ${e.date}</div>
+      <div class="entry-title">${e.title}</div>
+      <div class="entry-text">${e.text}</div>
+      ${e.tags.length?`<div class="entry-tags">${e.tags.map(t=>`<span class="entry-tag">${t}</span>`).join('')}</div>`:''}</div>`).join('');
+}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>трекер настроения — ZYRT4ICK</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#080808;color:#d4d4d4;font-family:'IBM Plex Mono',monospace;min-height:100vh;padding:3rem 1.5rem;position:relative}
+  .watermark{position:fixed;bottom:1.2rem;right:1.5rem;font-size:.6rem;color:#2a2a2a;letter-spacing:.25em;pointer-events:none;z-index:999}
+  header{max-width:600px;margin:0 auto 3rem;border-bottom:1px solid #1e1e1e;padding-bottom:1.5rem}
+  header h1{font-size:1.1rem;font-weight:700;letter-spacing:.2em;color:#ff6b35;margin-bottom:.3rem}
+  header p{font-size:.65rem;color:#555;letter-spacing:.15em}
+  .main{max-width:600px;margin:0 auto}
+  .question{font-size:.9rem;margin-bottom:2rem;line-height:1.7;color:#aaa}
+  .moods{display:grid;grid-template-columns:repeat(5,1fr);gap:.8rem;margin-bottom:3rem}
+  .mood{border:1px solid #1e1e1e;padding:1.2rem .5rem;text-align:center;cursor:pointer;transition:all .2s;border-radius:2px}
+  .mood:hover{border-color:#ff6b35;transform:translateY(-3px)}
+  .mood.selected{border-color:#ff6b35;background:#ff6b3510}
+  .mood .emoji{font-size:1.6rem;display:block;margin-bottom:.4rem}
+  .mood .label{font-size:.55rem;letter-spacing:.15em;color:#666}
+  .mood.selected .label{color:#ff6b35}
+  .note-section{margin-bottom:2rem}
+  .note-section label{font-size:.65rem;letter-spacing:.2em;color:#555;display:block;margin-bottom:.5rem}
+  textarea{width:100%;background:#0f0f0f;border:1px solid #1e1e1e;color:#ccc;font-family:'IBM Plex Mono',monospace;font-size:.8rem;padding:1rem;resize:none;height:100px;outline:none;transition:border-color .2s}
+  textarea:focus{border-color:#ff6b35}
+  .save-btn{background:none;border:1px solid #ff6b35;color:#ff6b35;font-family:'IBM Plex Mono',monospace;font-size:.7rem;padding:.7rem 2rem;cursor:pointer;letter-spacing:.2em;transition:all .2s}
+  .save-btn:hover{background:#ff6b35;color:#000}
+  .log{max-width:600px;margin:3rem auto 0;border-top:1px solid #1a1a1a;padding-top:2rem}
+  .log h2{font-size:.7rem;letter-spacing:.25em;color:#444;margin-bottom:1.5rem}
+  .log-entry{padding:.8rem 0;border-bottom:1px solid #111;display:flex;align-items:center;gap:1rem}
+  .log-entry .time{font-size:.6rem;color:#333;min-width:120px}
+  .log-entry .e{font-size:1.1rem}
+  .log-entry .note-text{font-size:.7rem;color:#666;flex:1}
+  .empty{font-size:.7rem;color:#2a2a2a;letter-spacing:.15em}
+  footer{max-width:600px;margin:3rem auto 0;font-size:.6rem;color:#2a2a2a}
+  footer a{color:#2a2a2a;text-decoration:none}
+  footer a:hover{color:#ff6b35}
+</style>
+</head>
+<body>
+<header>
+  <h1>трекер настроения</h1>
+  <p>// by zyrt4ick · запиши как тебе сейчас</p>
+</header>
+<div class="main">
+  <p class="question">как ты себя чувствуешь прямо сейчас?</p>
+  <div class="moods">
+    <div class="mood" data-mood="💀" data-label="мертво" onclick="selectMood(this)">
+      <span class="emoji">💀</span><span class="label">мертво</span>
+    </div>
+    <div class="mood" data-mood="😶" data-label="никак" onclick="selectMood(this)">
+      <span class="emoji">😶</span><span class="label">никак</span>
+    </div>
+    <div class="mood" data-mood="😑" data-label="норм" onclick="selectMood(this)">
+      <span class="emoji">😑</span><span class="label">норм</span>
+    </div>
+    <div class="mood" data-mood="😌" data-label="окей" onclick="selectMood(this)">
+      <span class="emoji">😌</span><span class="label">окей</span>
+    </div>
+    <div class="mood" data-mood="🔥" data-label="горю" onclick="selectMood(this)">
+      <span class="emoji">🔥</span><span class="label">горю</span>
+    </div>
+  </div>
+  <div class="note-section">
+    <label>// заметка (необязательно)</label>
+    <textarea id="noteInput" placeholder="что случилось..."></textarea>
+  </div>
+  <button class="save-btn" onclick="saveEntry()">сохранить запись</button>
+</div>
+
+<div class="log">
+  <h2>// история</h2>
+  <div id="logList"><p class="empty">пусто. пока.</p></div>
+</div>
+
+<footer><a href="https://spontaneous-pithivier-620100.netlify.app/" target="_blank">← главная</a></footer>
+<div class="watermark">ZYRT4ICK</div>
+
+<script>
+let selected = null;
+let entries = JSON.parse(localStorage.getItem('mood_log')||'[]');
+
+function selectMood(el){
+  document.querySelectorAll('.mood').forEach(m=>m.classList.remove('selected'));
+  el.classList.add('selected');
+  selected = {emoji:el.dataset.mood, label:el.dataset.label};
+}
+function saveEntry(){
+  if(!selected)return alert('выбери настроение');
+  const note = document.getElementById('noteInput').value.trim();
+  const entry = {emoji:selected.emoji,label:selected.label,note,time:new Date().toLocaleString('ru')};
+  entries.unshift(entry);
+  localStorage.setItem('mood_log',JSON.stringify(entries));
+  document.getElementById('noteInput').value='';
+  document.querySelectorAll('.mood').forEach(m=>m.classList.remove('selected'));
+  selected=null;
+  renderLog();
+}
+function renderLog(){
+  const list = document.getElementById('logList');
+  if(!entries.length){list.innerHTML='<p class="empty">пусто. пока.</p>';return;}
+  list.innerHTML = entries.slice(0,15).map(e=>`
+    <div class="log-entry">
+      <span class="time">${e.time}</span>
+      <span class="e">${e.emoji}</span>
+      <span class="note-text">${e.note||'—'}</span>
+    </div>`).join('');
+}
+renderLog();
+</script>
+</body>
+</html>

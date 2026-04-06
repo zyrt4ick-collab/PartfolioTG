@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>генератор оскорблений — ZYRT4ICK</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0d0d0d;color:#e8e8e8;font-family:'Courier Prime',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;overflow:hidden;position:relative}
+  .watermark{position:fixed;bottom:1.2rem;right:1.5rem;font-size:.6rem;color:#222;letter-spacing:.25em;pointer-events:none}
+  .bg-text{position:fixed;font-size:20vw;color:#0f0f0f;font-weight:700;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;letter-spacing:-.02em;z-index:0;user-select:none}
+  .content{position:relative;z-index:1;max-width:640px;width:100%}
+  h1{font-size:.8rem;letter-spacing:.4em;color:#666;margin-bottom:4rem;text-transform:uppercase}
+  .insult-wrap{min-height:120px;display:flex;align-items:center;justify-content:center;margin-bottom:4rem}
+  .insult{font-size:clamp(1rem,3.5vw,1.6rem);line-height:1.5;color:#fff;font-weight:700;opacity:0;transform:translateY(8px);transition:all .35s ease}
+  .insult.show{opacity:1;transform:translateY(0)}
+  .target-row{display:flex;gap:.8rem;justify-content:center;margin-bottom:2.5rem;flex-wrap:wrap}
+  .target-btn{background:none;border:1px solid #2a2a2a;color:#555;font-family:'Courier Prime',monospace;font-size:.65rem;padding:.4rem 1.2rem;cursor:pointer;letter-spacing:.15em;transition:all .2s}
+  .target-btn:hover,.target-btn.active{border-color:#e8e8e8;color:#e8e8e8}
+  .gen-btn{background:#e8e8e8;border:none;color:#000;font-family:'Courier Prime',monospace;font-size:.8rem;font-weight:700;padding:1rem 3rem;cursor:pointer;letter-spacing:.2em;text-transform:uppercase;transition:all .15s}
+  .gen-btn:hover{background:#fff;transform:scale(1.02)}
+  .gen-btn:active{transform:scale(.98)}
+  .counter{margin-top:1.5rem;font-size:.6rem;color:#333;letter-spacing:.2em}
+  footer{position:fixed;bottom:1.2rem;left:1.5rem;font-size:.6rem;color:#2a2a2a}
+  footer a{color:#2a2a2a;text-decoration:none}
+  footer a:hover{color:#fff}
+</style>
+</head>
+<body>
+<div class="bg-text">!!!</div>
+<div class="content">
+  <h1>// генератор оскорблений</h1>
+
+  <div class="insult-wrap">
+    <div class="insult" id="insultText">нажми кнопку</div>
+  </div>
+
+  <div class="target-row">
+    <button class="target-btn active" onclick="setTarget(this,'нейтрально')">нейтрально</button>
+    <button class="target-btn" onclick="setTarget(this,'другу')">другу</button>
+    <button class="target-btn" onclick="setTarget(this,'врагу')">врагу</button>
+    <button class="target-btn" onclick="setTarget(this,'себе')">себе</button>
+  </div>
+
+  <button class="gen-btn" onclick="generate()">сгенерировать</button>
+  <div class="counter">сгенерировано: <span id="cnt">0</span></div>
+</div>
+
+<footer><a href="https://spontaneous-pithivier-620100.netlify.app/" target="_blank">← главная</a></footer>
+<div class="watermark">ZYRT4ICK</div>
+
+<script>
+const db = {
+  'нейтрально': [
+    "ты звучишь как баг в продакшене в пятницу вечером.",
+    "твой IQ совпадает с температурой в холодильнике.",
+    "ты — living proof что эволюция иногда даёт задний ход.",
+    "ты напоминаешь wifi в торговом центре: много народу и ничего не работает.",
+    "у тебя харизма пустого текстового файла.",
+    "если бы тупость светилась, ты бы был солнцем.",
+    "ты — человеческий CAPTCHA: непонятно зачем нужен.",
+    "общаться с тобой — это как читать документацию без примеров."
+  ],
+  'другу': [
+    "братан, ты как старый баг — все знают что ты есть, но никто не чинит.",
+    "ты мой лучший друг, потому что на твоём фоне я выгляжу умно.",
+    "хорошо что ты есть — есть с кем делить вторичный позор.",
+    "я дружу с тобой из жалости. и это взаимно.",
+    "ты тот человек, из-за которого я начал ценить одиночество.",
+    "с тобой никогда не скучно. потому что скучно с первых пяти секунд."
+  ],
+  'врагу': [
+    "ты — ошибка 404 в списке значимых людей.",
+    "надеюсь твой следующий ход в жизни будет таким же успешным, как предыдущие.",
+    "ты — живое доказательство что некоторым людям не стоило давать интернет.",
+    "у тебя большое будущее. в прошлом.",
+    "ты говоришь много, но даже тишина умнее тебя.",
+    "уверен, твои родители тобой гордятся. в пределах погрешности."
+  ],
+  'себе': [
+    "ты снова не сделал то, что планировал. классика.",
+    "ты прокрастинируешь даже в том, чтобы перестать прокрастинировать.",
+    "твой потенциал и твои достижения — параллельные прямые.",
+    "ты мог бы стать кем угодно. и выбрал вот это.",
+    "ты опять открыл телефон без причины. привет.",
+    "ты умнее чем кажешься. это не комплимент — ты кажешься очень тупым."
+  ]
+};
+let target='нейтрально', count=0;
+function setTarget(btn,t){
+  document.querySelectorAll('.target-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  target=t;
+}
+function generate(){
+  const arr=db[target];
+  const text=arr[Math.floor(Math.random()*arr.length)];
+  const el=document.getElementById('insultText');
+  el.classList.remove('show');
+  setTimeout(()=>{el.textContent=text;el.classList.add('show');},200);
+  count++;
+  document.getElementById('cnt').textContent=count;
+}
+document.getElementById('insultText').classList.add('show');
+</script>
+</body>
+</html>

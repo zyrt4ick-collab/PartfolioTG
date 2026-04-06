@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>время — ZYRT4ICK</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#060606;color:#eee;font-family:'Space Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;position:relative}
+  .watermark{position:fixed;bottom:1.2rem;right:1.5rem;font-size:.6rem;color:#1a1a1a;letter-spacing:.25em;pointer-events:none}
+  canvas{position:fixed;top:0;left:0;width:100%;height:100%;opacity:.06;pointer-events:none}
+  .center{position:relative;z-index:1;text-align:center}
+  .clock{font-size:clamp(3rem,15vw,9rem);font-weight:700;letter-spacing:-.02em;line-height:1;color:#eee;font-variant-numeric:tabular-nums}
+  .clock .sep{color:#333;animation:blink 1s step-end infinite}
+  @keyframes blink{50%{opacity:0}}
+  .date{font-size:.7rem;letter-spacing:.4em;color:#333;margin-top:1.5rem;text-transform:lowercase}
+  .greeting{font-size:.75rem;color:#555;letter-spacing:.2em;margin-top:.7rem}
+  .quote{max-width:400px;font-size:.7rem;color:#222;margin-top:3rem;line-height:1.8;letter-spacing:.05em;font-style:italic}
+  .blocks{display:flex;gap:3rem;margin-top:4rem}
+  .block{text-align:center}
+  .block-val{font-size:1.8rem;font-weight:700;color:#444}
+  .block-label{font-size:.5rem;letter-spacing:.25em;color:#2a2a2a;margin-top:.3rem}
+  .progress-row{margin-top:3rem;width:280px}
+  .prog-item{margin-bottom:1rem}
+  .prog-label{font-size:.55rem;letter-spacing:.15em;color:#2a2a2a;display:flex;justify-content:space-between;margin-bottom:.3rem}
+  .prog-bar{height:1px;background:#111}
+  .prog-fill{height:100%;background:#333;transition:width .5s}
+  footer{position:fixed;bottom:1.2rem;left:1.5rem;font-size:.6rem;color:#1e1e1e}
+  footer a{color:#1e1e1e;text-decoration:none}
+  footer a:hover{color:#555}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="center">
+  <div class="clock"><span id="h">00</span><span class="sep">:</span><span id="m">00</span><span class="sep">:</span><span id="s">00</span></div>
+  <div class="date" id="dateEl">—</div>
+  <div class="greeting" id="greetEl">—</div>
+
+  <div class="blocks">
+    <div class="block"><div class="block-val" id="dayOfYear">—</div><div class="block-label">день года</div></div>
+    <div class="block"><div class="block-val" id="weekNum">—</div><div class="block-label">неделя</div></div>
+    <div class="block"><div class="block-val" id="daysLeft">—</div><div class="block-label">до нового года</div></div>
+  </div>
+
+  <div class="progress-row">
+    <div class="prog-item">
+      <div class="prog-label"><span>день</span><span id="dayPct">0%</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="dayBar"></div></div>
+    </div>
+    <div class="prog-item">
+      <div class="prog-label"><span>год</span><span id="yearPct">0%</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="yearBar"></div></div>
+    </div>
+  </div>
+</div>
+
+<footer><a href="https://spontaneous-pithivier-620100.netlify.app/" target="_blank">← главная</a></footer>
+<div class="watermark">ZYRT4ICK</div>
+
+<script>
+// canvas grain
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+function resizeCanvas(){cv.width=window.innerWidth;cv.height=window.innerHeight;}
+function drawGrain(){
+  const id=ctx.createImageData(cv.width,cv.height);
+  const d=id.data;
+  for(let i=0;i<d.length;i+=4){const v=Math.random()*255;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;}
+  ctx.putImageData(id,0,0);
+}
+resizeCanvas();window.addEventListener('resize',resizeCanvas);
+setInterval(drawGrain,80);
+
+const days=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+const months=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const greetings={0:'ночь. тихо.',1:'ночь. тихо.',2:'ночь. тихо.',3:'ночь. тихо.',4:'ночь. тихо.',5:'рано встал.',6:'утро.',7:'утро.',8:'утро.',9:'доброе утро.',10:'день.',11:'день.',12:'обед.',13:'день.',14:'день.',15:'день.',16:'вечереет.',17:'вечер.',18:'вечер.',19:'вечер.',20:'поздно.',21:'поздно.',22:'ночь.',23:'ночь.'};
+
+function pad(n){return String(n).padStart(2,'0')}
+function getDayOfYear(d){return Math.floor((d-new Date(d.getFullYear(),0,0))/(1000*60*60*24));}
+function getWeek(d){const s=new Date(d.getFullYear(),0,1);return Math.ceil(((d-s)/86400000+s.getDay()+1)/7);}
+
+function tick(){
+  const n=new Date();
+  document.getElementById('h').textContent=pad(n.getHours());
+  document.getElementById('m').textContent=pad(n.getMinutes());
+  document.getElementById('s').textContent=pad(n.getSeconds());
+  document.getElementById('dateEl').textContent=`${days[n.getDay()]} · ${n.getDate()} ${months[n.getMonth()]} ${n.getFullYear()}`;
+  document.getElementById('greetEl').textContent=greetings[n.getHours()];
+
+  const doy=getDayOfYear(n);
+  document.getElementById('dayOfYear').textContent=doy;
+  document.getElementById('weekNum').textContent=getWeek(n);
+
+  const endOfYear=new Date(n.getFullYear(),11,31);
+  const dLeft=Math.ceil((endOfYear-n)/(1000*60*60*24));
+  document.getElementById('daysLeft').textContent=dLeft;
+
+  const dayPct=Math.round((n.getHours()*3600+n.getMinutes()*60+n.getSeconds())/864);
+  document.getElementById('dayPct').textContent=dayPct+'%';
+  document.getElementById('dayBar').style.width=dayPct+'%';
+
+  const startYear=new Date(n.getFullYear(),0,1);
+  const endYear=new Date(n.getFullYear()+1,0,1);
+  const yearPct=Math.round((n-startYear)/(endYear-startYear)*100);
+  document.getElementById('yearPct').textContent=yearPct+'%';
+  document.getElementById('yearBar').style.width=yearPct+'%';
+}
+setInterval(tick,1000);tick();
+</script>
+</body>
+</html>

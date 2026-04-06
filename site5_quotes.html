@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>цитаты — ZYRT4ICK</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Space+Mono&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#080808;color:#e0e0e0;font-family:'Space Mono',monospace;min-height:100vh;display:grid;place-items:center;padding:2rem;position:relative}
+  .watermark{position:fixed;bottom:1.2rem;right:1.5rem;font-size:.6rem;color:#1a1a1a;letter-spacing:.25em;pointer-events:none}
+  .card{max-width:580px;width:100%;text-align:center;position:relative}
+  .label{font-size:.6rem;letter-spacing:.35em;color:#333;margin-bottom:3rem;text-transform:uppercase}
+  .quote-wrap{min-height:160px;display:flex;align-items:center;justify-content:center;padding:0 1rem;margin-bottom:3rem;position:relative}
+  .quote-wrap::before,.quote-wrap::after{content:'"';font-family:'Playfair Display',serif;font-size:5rem;color:#161616;position:absolute;line-height:1}
+  .quote-wrap::before{top:-1rem;left:0}
+  .quote-wrap::after{bottom:-2.5rem;right:0}
+  .quote-text{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(1rem,3vw,1.4rem);line-height:1.7;color:#ddd;transition:opacity .3s,transform .3s}
+  .quote-text.hidden{opacity:0;transform:translateY(5px)}
+  .author{font-size:.65rem;letter-spacing:.2em;color:#555;margin-bottom:3.5rem;transition:opacity .3s}
+  .author.hidden{opacity:0}
+  .controls{display:flex;gap:1rem;justify-content:center;align-items:center}
+  .btn{background:none;border:1px solid #222;color:#555;font-family:'Space Mono',monospace;font-size:.6rem;padding:.6rem 1.8rem;cursor:pointer;letter-spacing:.15em;transition:all .2s}
+  .btn:hover{border-color:#e0e0e0;color:#e0e0e0}
+  .btn.main{border-color:#888;color:#888}
+  .btn.main:hover{border-color:#fff;color:#fff;background:#ffffff08}
+  .tag{display:inline-block;font-size:.5rem;letter-spacing:.2em;border:1px solid #1e1e1e;color:#333;padding:.15rem .5rem;margin-bottom:2rem;text-transform:uppercase}
+  .saved-list{max-width:580px;width:100%;margin-top:3rem;border-top:1px solid #111;padding-top:2rem;display:none}
+  .saved-list.has-items{display:block}
+  .saved-label{font-size:.6rem;letter-spacing:.25em;color:#2a2a2a;margin-bottom:1rem}
+  .saved-item{font-size:.75rem;color:#444;padding:.5rem 0;border-bottom:1px solid #0f0f0f;font-family:'Playfair Display',serif;font-style:italic}
+  footer{position:fixed;bottom:1.2rem;left:1.5rem;font-size:.6rem;color:#1e1e1e}
+  footer a{color:#1e1e1e;text-decoration:none;transition:color .2s}
+  footer a:hover{color:#888}
+</style>
+</head>
+<body>
+<div style="display:flex;flex-direction:column;align-items:center;gap:0;width:100%;max-width:580px">
+  <div class="card">
+    <p class="label">// цитаты которые что-то значат</p>
+    <div class="tag" id="tagEl">философия</div>
+    <div class="quote-wrap">
+      <p class="quote-text" id="quoteEl">Лучше молчать и казаться дураком, чем говорить и развеять все сомнения.</p>
+    </div>
+    <p class="author" id="authorEl">— Марк Твен</p>
+    <div class="controls">
+      <button class="btn" onclick="saveQuote()">сохранить</button>
+      <button class="btn main" onclick="nextQuote()">следующая →</button>
+      <button class="btn" onclick="randomTag()">жанр</button>
+    </div>
+  </div>
+  <div class="saved-list" id="savedList">
+    <div class="saved-label">// сохранённые</div>
+    <div id="savedItems"></div>
+  </div>
+</div>
+<footer><a href="https://spontaneous-pithivier-620100.netlify.app/" target="_blank">← главная</a></footer>
+<div class="watermark">ZYRT4ICK</div>
+
+<script>
+const db = [
+  {q:"Лучше молчать и казаться дураком, чем говорить и развеять все сомнения.",a:"Марк Твен",t:"ирония"},
+  {q:"Два врага человека: боль и скука.",a:"Шопенгауэр",t:"философия"},
+  {q:"Я не боюсь смерти. Просто не хочу быть там, когда это случится.",a:"Вуди Аллен",t:"ирония"},
+  {q:"Не всё то золото, что молчит.",a:"неизвестно",t:"мудрость"},
+  {q:"Жизнь — это то, что происходит, пока ты строишь другие планы.",a:"Джон Леннон",t:"жизнь"},
+  {q:"В конце концов всё будет хорошо. Если не хорошо — значит ещё не конец.",a:"Оскар Уайльд",t:"жизнь"},
+  {q:"Проблема мира в том, что умные люди полны сомнений, а идиоты полны уверенности.",a:"Бертран Рассел",t:"философия"},
+  {q:"Делай что должен — и будь что будет.",a:"народное",t:"мудрость"},
+  {q:"Самое опасное существо — посредственность с амбициями.",a:"неизвестно",t:"злое"},
+  {q:"Интернет — это место, где никто не знает, что ты собака, зато все знают, что ты тупой.",a:"неизвестно",t:"ирония"},
+  {q:"Тот, кто не читает, не имеет преимуществ перед тем, кто не умеет.",a:"Марк Твен",t:"мудрость"},
+  {q:"Ты не можешь вернуться и изменить начало. Но ты можешь начать сейчас и изменить конец.",a:"К.С. Льюис",t:"жизнь"},
+  {q:"Счастье — это когда тебя понимают. Большое счастье — когда тебя переносят.",a:"неизвестно",t:"злое"},
+];
+let idx=0, saved=[];
+function show(i){
+  const q=document.getElementById('quoteEl');
+  const a=document.getElementById('authorEl');
+  const t=document.getElementById('tagEl');
+  q.classList.add('hidden');a.classList.add('hidden');
+  setTimeout(()=>{
+    q.textContent=db[i].q;
+    a.textContent='— '+db[i].a;
+    t.textContent=db[i].t;
+    q.classList.remove('hidden');a.classList.remove('hidden');
+  },300);
+}
+function nextQuote(){idx=(idx+1)%db.length;show(idx);}
+function randomTag(){
+  const tags=[...new Set(db.map(d=>d.t))];
+  const tag=tags[Math.floor(Math.random()*tags.length)];
+  const filtered=db.filter(d=>d.t===tag);
+  const pick=filtered[Math.floor(Math.random()*filtered.length)];
+  idx=db.indexOf(pick);show(idx);
+}
+function saveQuote(){
+  const q=db[idx];
+  if(!saved.find(s=>s.q===q.q)){
+    saved.push(q);
+    const list=document.getElementById('savedList');
+    list.classList.add('has-items');
+    document.getElementById('savedItems').innerHTML=saved.map(s=>`<div class="saved-item">"${s.q}" — ${s.a}</div>`).join('');
+  }
+}
+</script>
+</body>
+</html>

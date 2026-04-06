@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pixel art — ZYRT4ICK</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#080808;color:#ccc;font-family:'Space Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2.5rem 1rem;position:relative}
+  .watermark{position:fixed;bottom:1.2rem;right:1.5rem;font-size:.6rem;color:#1e1e1e;letter-spacing:.25em;pointer-events:none;z-index:999}
+  h1{font-size:.75rem;letter-spacing:.4em;color:#e040fb;margin-bottom:.3rem}
+  .sub{font-size:.55rem;color:#333;letter-spacing:.2em;margin-bottom:2rem}
+  .ui{display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+  #canvas{border:1px solid #1e1e1e;cursor:crosshair;image-rendering:pixelated;image-rendering:crisp-edges;flex-shrink:0}
+  .panel{display:flex;flex-direction:column;gap:1rem;min-width:140px}
+  .section{border:1px solid #141414;padding:1rem}
+  .section-label{font-size:.5rem;letter-spacing:.2em;color:#333;margin-bottom:.7rem}
+  .color-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}
+  .swatch{width:22px;height:22px;cursor:pointer;border:2px solid transparent;transition:border-color .1s;flex-shrink:0}
+  .swatch.active{border-color:#fff}
+  .custom-color{display:flex;gap:.5rem;align-items:center;margin-top:.5rem}
+  .custom-color label{font-size:.5rem;color:#444;letter-spacing:.1em}
+  input[type=color]{width:30px;height:22px;border:none;background:none;cursor:pointer;padding:0}
+  .tool-row{display:flex;flex-direction:column;gap:.4rem}
+  .tool-btn{background:none;border:1px solid #1e1e1e;color:#555;font-family:'Space Mono',monospace;font-size:.55rem;padding:.45rem .5rem;cursor:pointer;letter-spacing:.1em;text-align:left;transition:all .2s}
+  .tool-btn:hover,.tool-btn.active{border-color:#e040fb;color:#e040fb}
+  .size-row{display:flex;gap:.4rem;align-items:center}
+  .size-btn{width:24px;height:24px;background:none;border:1px solid #1e1e1e;color:#555;font-family:'Space Mono',monospace;font-size:.6rem;cursor:pointer;transition:all .2s;line-height:1}
+  .size-btn.active,.size-btn:hover{border-color:#e040fb;color:#e040fb}
+  .action-btn{background:none;border:1px solid #1e1e1e;color:#555;font-family:'Space Mono',monospace;font-size:.55rem;padding:.45rem .5rem;cursor:pointer;letter-spacing:.1em;transition:all .2s;width:100%}
+  .action-btn:hover{border-color:#e040fb;color:#e040fb}
+  .action-btn.danger:hover{border-color:#ff4040;color:#ff4040}
+  .preview{width:64px;height:64px;image-rendering:pixelated;border:1px solid #1e1e1e}
+  footer{margin-top:2.5rem;font-size:.6rem;color:#222}
+  footer a{color:#222;text-decoration:none}
+  footer a:hover{color:#e040fb}
+</style>
+</head>
+<body>
+<h1>// pixel art</h1>
+<div class="sub">by zyrt4ick · рисуй пиксели</div>
+
+<div class="ui">
+  <canvas id="canvas" width="320" height="320"></canvas>
+
+  <div class="panel">
+    <div class="section">
+      <div class="section-label">// цвет</div>
+      <div class="color-grid" id="palette"></div>
+      <div class="custom-color">
+        <label>custom</label>
+        <input type="color" id="customColor" value="#e040fb" oninput="setCustomColor(this.value)">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">// инструмент</div>
+      <div class="tool-row">
+        <button class="tool-btn active" id="tool-draw" onclick="setTool('draw',this)">✏ карандаш</button>
+        <button class="tool-btn" id="tool-erase" onclick="setTool('erase',this)">⬜ ластик</button>
+        <button class="tool-btn" id="tool-fill" onclick="setTool('fill',this)">◼ заливка</button>
+        <button class="tool-btn" id="tool-pick" onclick="setTool('pick',this)">💧 пипетка</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">// размер</div>
+      <div class="size-row">
+        <button class="size-btn active" onclick="setSize(1,this)">1</button>
+        <button class="size-btn" onclick="setSize(2,this)">2</button>
+        <button class="size-btn" onclick="setSize(3,this)">3</button>
+        <button class="size-btn" onclick="setSize(4,this)">4</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">// превью</div>
+      <canvas class="preview" id="preview"></canvas>
+    </div>
+
+    <div class="section">
+      <div class="section-label">// действия</div>
+      <button class="action-btn" onclick="saveImg()">⬇ скачать</button>
+      <button class="action-btn" onclick="clearCanvas()">✕ очистить</button>
+      <button class="action-btn" onclick="fillGrid()">▦ сетка</button>
+    </div>
+  </div>
+</div>
+
+<footer><a href="https://spontaneous-pithivier-620100.netlify.app/" target="_blank">← главная</a></footer>
+<div class="watermark">ZYRT4ICK</div>
+
+<script>
+const GRID=16, CELL=20, SIZE=GRID*CELL;
+const cv=document.getElementById('canvas');
+const ctx=cv.getContext('2d');
+const prev=document.getElementById('preview');
+const pctx=prev.getContext('2d');
+let grid=Array.from({length:GRID},()=>Array(GRID).fill('#080808'));
+let curColor='#e040fb', tool='draw', brushSize=1, drawing=false;
+let showGrid=true;
+
+const palette=['#080808','#ffffff','#e040fb','#00e5ff','#ff4040','#ff8c00','#c0ff00','#00e676','#2979ff','#7c4dff','#f06292','#ffd740','#69f0ae','#40c4ff','#b0bec5','#455a64','#8d6e63','#26a69a','#ef5350','#ab47bc'];
+
+function initPalette(){
+  const g=document.getElementById('palette');
+  palette.forEach(c=>{
+    const s=document.createElement('div');
+    s.className='swatch'+(c===curColor?' active':'');
+    s.style.background=c;
+    s.onclick=()=>{curColor=c;document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('active'));s.classList.add('active');};
+    g.appendChild(s);
+  });
+}
+function setCustomColor(c){curColor=c;}
+function setTool(t,btn){tool=t;document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function setSize(s,btn){brushSize=s;document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+
+function draw(){
+  ctx.clearRect(0,0,SIZE,SIZE);
+  for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++){
+    ctx.fillStyle=grid[r][c];
+    ctx.fillRect(c*CELL,r*CELL,CELL,CELL);
+  }
+  if(showGrid){
+    ctx.strokeStyle='#0f0f0f';ctx.lineWidth=.5;
+    for(let i=0;i<=GRID;i++){ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,SIZE);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*CELL);ctx.lineTo(SIZE,i*CELL);ctx.stroke();}
+  }
+  updatePreview();
+}
+function updatePreview(){
+  pctx.clearRect(0,0,64,64);
+  const scale=64/SIZE;
+  pctx.scale(scale,scale);
+  for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++){pctx.fillStyle=grid[r][c];pctx.fillRect(c*CELL,r*CELL,CELL,CELL);}
+  pctx.setTransform(1,0,0,1,0,0);
+}
+function getCell(e){
+  const rect=cv.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+  return [Math.floor(y/CELL),Math.floor(x/CELL)];
+}
+function paint(r,c){
+  if(r<0||r>=GRID||c<0||c>=GRID)return;
+  const half=Math.floor(brushSize/2);
+  for(let dr=-half;dr<brushSize-half;dr++)for(let dc=-half;dc<brushSize-half;dc++){
+    const nr=r+dr,nc=c+dc;
+    if(nr>=0&&nr<GRID&&nc>=0&&nc<GRID){
+      grid[nr][nc]=tool==='erase'?'#080808':curColor;
+    }
+  }
+  draw();
+}
+function floodFill(r,c,target,replace){
+  if(r<0||r>=GRID||c<0||c>=GRID)return;
+  if(grid[r][c]!==target||grid[r][c]===replace)return;
+  grid[r][c]=replace;
+  floodFill(r+1,c,target,replace);floodFill(r-1,c,target,replace);
+  floodFill(r,c+1,target,replace);floodFill(r,c-1,target,replace);
+}
+cv.addEventListener('mousedown',e=>{
+  drawing=true;
+  const [r,c]=getCell(e);
+  if(tool==='fill'){floodFill(r,c,grid[r][c],curColor);draw();}
+  else if(tool==='pick'){curColor=grid[r][c];}
+  else paint(r,c);
+});
+cv.addEventListener('mousemove',e=>{if(!drawing)return;const[r,c]=getCell(e);if(tool!=='fill'&&tool!=='pick')paint(r,c);});
+cv.addEventListener('mouseup',()=>drawing=false);
+cv.addEventListener('mouseleave',()=>drawing=false);
+
+// Touch support
+cv.addEventListener('touchstart',e=>{e.preventDefault();drawing=true;const t=e.touches[0];const[r,c]=getCell(t);if(tool==='fill'){floodFill(r,c,grid[r][c],curColor);draw();}else paint(r,c);},{passive:false});
+cv.addEventListener('touchmove',e=>{e.preventDefault();if(!drawing)return;const t=e.touches[0];const[r,c]=getCell(t);if(tool!=='fill')paint(r,c);},{passive:false});
+cv.addEventListener('touchend',()=>drawing=false);
+
+function saveImg(){const a=document.createElement('a');a.download='pixel-zyrt4ick.png';a.href=cv.toDataURL();a.click();}
+function clearCanvas(){if(confirm('точно очистить?')){grid=Array.from({length:GRID},()=>Array(GRID).fill('#080808'));draw();}}
+function fillGrid(){showGrid=!showGrid;draw();}
+
+initPalette();draw();
+</script>
+</body>
+</html>

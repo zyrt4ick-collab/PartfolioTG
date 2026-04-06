@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>музло — ZYRT4ICK</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#090909;--card:#111;--acc:#7b61ff;--txt:#ddd;--dim:#3a3a3a}
+  body{background:var(--bg);color:var(--txt);font-family:'Space Mono',monospace;padding:3rem 1.5rem;min-height:100vh;position:relative}
+  .watermark{position:fixed;bottom:1.2rem;right:1.5rem;font-size:.6rem;color:#1e1e1e;letter-spacing:.25em;pointer-events:none}
+  .header{max-width:640px;margin:0 auto 3rem;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #161616;padding-bottom:1.5rem}
+  .header h1{font-size:1.1rem;color:var(--acc);letter-spacing:.15em}
+  .header span{font-size:.6rem;color:var(--dim);letter-spacing:.2em}
+  .genres{max-width:640px;margin:0 auto 2rem;display:flex;gap:.6rem;flex-wrap:wrap}
+  .g-btn{background:none;border:1px solid #1a1a1a;color:#555;font-family:'Space Mono',monospace;font-size:.6rem;padding:.35rem 1rem;cursor:pointer;letter-spacing:.15em;transition:all .2s}
+  .g-btn.active,.g-btn:hover{border-color:var(--acc);color:var(--acc)}
+  .list{max-width:640px;margin:0 auto}
+  .track{display:flex;align-items:center;gap:1.2rem;padding:1rem 0;border-bottom:1px solid #111;cursor:pointer;transition:background .2s;padding-left:.5rem;padding-right:.5rem}
+  .track:hover{background:#0d0d0d}
+  .track:hover .play-icon{opacity:1}
+  .num{font-size:.6rem;color:var(--dim);width:24px;text-align:right}
+  .play-icon{font-size:.7rem;color:var(--acc);opacity:0;transition:opacity .2s;width:12px}
+  .track-info{flex:1}
+  .track-name{font-size:.82rem;color:#ddd;margin-bottom:.2rem}
+  .track-artist{font-size:.65rem;color:#555}
+  .track-dur{font-size:.65rem;color:var(--dim)}
+  .vibe{display:inline-block;font-size:.5rem;letter-spacing:.12em;border:1px solid #222;padding:.1rem .4rem;color:#444;margin-left:.5rem;vertical-align:middle}
+  .playing .track-name{color:var(--acc)}
+  .playing .num{color:var(--acc)}
+  .now-playing{max-width:640px;margin:3rem auto 0;padding:1.2rem;background:#0d0d0d;border:1px solid #161616;display:none}
+  .now-playing.visible{display:block}
+  .np-label{font-size:.55rem;letter-spacing:.25em;color:var(--dim);margin-bottom:.4rem}
+  .np-name{font-size:.9rem;color:var(--acc)}
+  .np-artist{font-size:.65rem;color:#555;margin-top:.2rem}
+  .bar{height:2px;background:#1a1a1a;margin-top:1rem;position:relative;overflow:hidden}
+  .bar-fill{height:100%;background:var(--acc);width:0;animation:none}
+  .bar-fill.playing{animation:progress 180s linear forwards}
+  @keyframes progress{to{width:100%}}
+  footer{max-width:640px;margin:3rem auto 0;font-size:.6rem;color:var(--dim)}
+  footer a{color:var(--dim);text-decoration:none}
+  footer a:hover{color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>// музло</h1>
+  <span>что слушаю прямо сейчас</span>
+</div>
+
+<div class="genres">
+  <button class="g-btn active" onclick="filter(this,'all')">всё</button>
+  <button class="g-btn" onclick="filter(this,'dark')">dark</button>
+  <button class="g-btn" onclick="filter(this,'phonk')">phonk</button>
+  <button class="g-btn" onclick="filter(this,'ambient')">ambient</button>
+  <button class="g-btn" onclick="filter(this,'rap')">rap</button>
+</div>
+
+<div class="list" id="trackList"></div>
+
+<div class="now-playing" id="nowPlaying">
+  <div class="np-label">// сейчас</div>
+  <div class="np-name" id="npName">—</div>
+  <div class="np-artist" id="npArtist">—</div>
+  <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+</div>
+
+<footer><a href="https://spontaneous-pithivier-620100.netlify.app/" target="_blank">← главная</a> · <a href="https://open.spotify.com/playlist/4AbU1IrPWhc64hXplL7oit" target="_blank">spotify →</a></footer>
+<div class="watermark">ZYRT4ICK</div>
+
+<script>
+const tracks = [
+  {n:"Dead to Me",a:"Kali Uchis",d:"2:47",g:"dark",v:"меланхолия"},
+  {n:"INDUSTRY BABY",a:"Lil Nas X",d:"3:32",g:"rap",v:"хайп"},
+  {n:"Murder on My Mind",a:"YNW Melly",d:"3:14",g:"dark",v:"грусть"},
+  {n:"DEAD GIRLZ",a:"Ghostemane",d:"2:55",g:"dark",v:"злость"},
+  {n:"PHONKADELIC",a:"MEMPHIS CULT",d:"2:20",g:"phonk",v:"скорость"},
+  {n:"Exhale",a:"Flume",d:"4:10",g:"ambient",v:"пустота"},
+  {n:"R.I.P.",a:"Young Jeezy",d:"3:45",g:"rap",v:"классика"},
+  {n:"Sinner",a:"SUICIDEBOYS",d:"2:50",g:"dark",v:"тяжело"},
+  {n:"GHOST",a:"GHOSTEMANE",d:"1:58",g:"phonk",v:"резко"},
+  {n:"Solitude",a:"Burial",d:"5:22",g:"ambient",v:"ночь"},
+  {n:"ULTRA",a:"SXMPXKORE",d:"2:12",g:"phonk",v:"дрифт"},
+  {n:"Numb",a:"Linkin Park",d:"3:05",g:"dark",v:"нос.тальгия"},
+];
+let activeFilter='all', activeIdx=null;
+function render(){
+  const filtered = activeFilter==='all'?tracks:tracks.filter(t=>t.g===activeFilter);
+  document.getElementById('trackList').innerHTML = filtered.map((t,i)=>`
+    <div class="track ${activeIdx===tracks.indexOf(t)?'playing':''}" onclick="play(${tracks.indexOf(t)})">
+      <span class="num">${String(i+1).padStart(2,'0')}</span>
+      <span class="play-icon">▶</span>
+      <div class="track-info">
+        <div class="track-name">${t.n}<span class="vibe">${t.v}</span></div>
+        <div class="track-artist">${t.a}</div>
+      </div>
+      <span class="track-dur">${t.d}</span>
+    </div>`).join('');
+}
+function play(idx){
+  activeIdx=idx;
+  const t=tracks[idx];
+  document.getElementById('npName').textContent=t.n;
+  document.getElementById('npArtist').textContent=t.a;
+  document.getElementById('nowPlaying').classList.add('visible');
+  const bar=document.getElementById('barFill');
+  bar.classList.remove('playing');
+  void bar.offsetWidth;
+  bar.classList.add('playing');
+  render();
+}
+function filter(btn,g){
+  document.querySelectorAll('.g-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter=g;
+  render();
+}
+render();
+</script>
+</body>
+</html>
